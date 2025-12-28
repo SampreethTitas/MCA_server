@@ -13,4 +13,8 @@ app.use('/admin', adminRoutes);
 import authRoutes from './routes/auth.routes.js';
 app.use('/auth', authRoutes);
 
+import facultyRoutes from './routes/faculty.routes.js';
+app.use('/faculty', facultyRoutes);   // 🔥 THIS WAS MISSING
+
+
 export default app;

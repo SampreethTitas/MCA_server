@@ -67,3 +67,22 @@ export const disableBatch = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
+
+import Student from '../models/Student.js';
+
+export const assignStudentsToBatch = async (req, res) => {
+  const { batchId, studentIds } = req.body;
+
+  if (!batchId || !studentIds?.length) {
+    return res.status(400).json({ message: 'Invalid data' });
+  }
+
+  // Assign selected students to batch
+  await Student.updateMany(
+    { _id: { $in: studentIds } },
+    { batch: batchId }
+  );
+
+  res.json({ message: 'Students assigned to batch successfully' });
+};
+

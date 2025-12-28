@@ -68,13 +68,20 @@ import {
   createBatch,
   getBatches,
   updateBatch,
-  disableBatch
+  disableBatch,
+    assignStudentsToBatch
 } from '../controllers/admin.batch.controller.js';
 
 router.post('/batches', protect, allowRoles('ADMIN'), createBatch);
 router.get('/batches', protect, allowRoles('ADMIN'), getBatches);
 router.put('/batches/:id', protect, allowRoles('ADMIN'), updateBatch);
 router.patch('/batches/:id/disable', protect, allowRoles('ADMIN'), disableBatch);
+router.post(
+  '/batches/assign-students',
+  protect,
+  allowRoles('ADMIN'),
+  assignStudentsToBatch
+);
 
 
 export default router;

@@ -6,6 +6,12 @@ const studentSchema = new mongoose.Schema({
   academicYear: { type: Number, enum: [1, 2], required: true },
   semester: { type: Number, required: true },
   section: { type: String, enum: ['A', 'B'], required: true },
+  batch: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: 'Batch',
+  default: null
+    },
+
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 
