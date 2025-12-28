@@ -1,29 +1,47 @@
 import Timetable from '../models/Timetable.js';
 import Subject from '../models/Subject.js';
+import Batch from '../models/Batch.js';
+import Resource from '../models/Resource.js';
+
 
 
 const validateSessions = async (sessions) => {
-        const usedRooms = new Set();
-        const usedFaculty = new Set();
-        const usedBatches = new Set();
+  const usedRooms = new Set();
+  const usedFaculty = new Set();
+  const usedBatches = new Set();
 
-        for (const s of sessions) {
-            if (usedRooms.has(String(s.room)))
-            throw new Error('Room clash in same slot');
+  for (const s of sessions) {
+    if (usedRooms.has(String(s.room)))
+      throw new Error('Room clash in same slot');
 
-            if (usedFaculty.has(String(s.faculty)))
-            throw new Error('Faculty clash in same slot');
+    if (usedFaculty.has(String(s.faculty)))
+      throw new Error('Faculty clash in same slot');
 
-            if (s.batch) {
-            if (usedBatches.has(String(s.batch)))
-                throw new Error('Batch assigned twice in same slot');
-            usedBatches.add(String(s.batch));
-            }
+    if (s.batch) {
+      if (usedBatches.has(String(s.batch)))
+        throw new Error('Batch assigned twice in same slot');
 
-            usedRooms.add(String(s.room));
-            usedFaculty.add(String(s.faculty));
-        }
-        };
+      const batch = await Batch.findById(s.batch);
+      const room = await Resource.findById(s.room);
+
+      if (!batch || !room) {
+        throw new Error('Invalid batch or room');
+      }
+
+      if (batch.size > room.capacity) {
+        throw new Error(
+          `${batch.name} exceeds capacity of ${room.roomCode}`
+        );
+      }
+
+      usedBatches.add(String(s.batch));
+    }
+
+    usedRooms.add(String(s.room));
+    usedFaculty.add(String(s.faculty));
+  }
+};
+
 export const createTimetableEntry = async (req, res) => {
   try {
     const {
@@ -150,22 +168,44 @@ export const upsertTimetableSlot = async (req, res) => {
       section,
       day,
       period,
-      sessions
+      sessions,
+      isContinuous
     } = req.body;
 
     if (!sessions || sessions.length === 0) {
       return res.status(400).json({ message: 'At least one session required' });
     }
 
+    // Validate current slot
     await validateSessions(sessions);
 
-    const slot = await Timetable.findOneAndUpdate(
+    // Save first period
+    await Timetable.findOneAndUpdate(
       { academicYear, semester, section, day, period },
       { sessions },
-      { new: true, upsert: true }
+      { upsert: true, new: true }
     );
 
-    res.json(slot);
+    // Save next period if continuous
+    if (isContinuous) {
+      const nextPeriod = Number(period) + 1;
+
+      if (nextPeriod > 6) {
+        return res.status(400).json({
+          message: 'Continuous lab exceeds day period limit'
+        });
+      }
+
+      await validateSessions(sessions);
+
+      await Timetable.findOneAndUpdate(
+        { academicYear, semester, section, day, period: nextPeriod },
+        { sessions },
+        { upsert: true, new: true }
+      );
+    }
+
+    res.json({ message: 'Timetable slot saved successfully' });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
