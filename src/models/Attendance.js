@@ -19,7 +19,12 @@ const attendanceSchema = new mongoose.Schema({
     type: String,
     enum: ['PRESENT', 'ABSENT', 'OD'],
     default: 'ABSENT'
+  },
+  isLocked: {
+  type: Boolean,
+  default: false
   }
+
 }, { timestamps: true });
 
 attendanceSchema.index(
